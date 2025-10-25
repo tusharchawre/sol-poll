@@ -13,7 +13,7 @@ import {
 } from "@solana/wallet-adapter-wallets";
 
 // Import wallet adapter CSS
-import "@solana/wallet-adapter-react-ui/styles.css";
+import "./wallet.css";
 
 interface WalletContextProviderProps {
   children: React.ReactNode;
