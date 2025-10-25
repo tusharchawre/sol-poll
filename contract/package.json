@@ -2,7 +2,8 @@
   "license": "ISC",
   "scripts": {
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
-    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
+    "anchor:idl" : "cp ./target/idl/contract.json ../frontend/anchor-idl/idl.json && cp ./target/types/contract.ts ../frontend/anchor-idl/idl.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1"

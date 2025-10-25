@@ -1,0 +1,690 @@
+{
+  "address": "3djVsscqrPVpY2q4aGzcgYZjFaLnSRwiingCBkC2WFcE",
+  "metadata": {
+    "name": "contract",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "cancel_campaign",
+      "discriminator": [
+        66,
+        10,
+        32,
+        138,
+        122,
+        36,
+        134,
+        202
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "campaign"
+          ]
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        },
+        {
+          "name": "platform_config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_campaign",
+      "discriminator": [
+        65,
+        49,
+        110,
+        7,
+        63,
+        238,
+        206,
+        77
+      ],
+      "accounts": [
+        {
+          "name": "campaign",
+          "writable": true
+        },
+        {
+          "name": "platform_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_campaign",
+      "discriminator": [
+        111,
+        131,
+        187,
+        98,
+        160,
+        193,
+        114,
+        244
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "campaign",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  109,
+                  112,
+                  97,
+                  105,
+                  103,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "campaign_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "platform_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "campaign_id",
+          "type": "u64"
+        },
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "options",
+          "type": {
+            "vec": "string"
+          }
+        },
+        {
+          "name": "reward",
+          "type": "u64"
+        },
+        {
+          "name": "max_participants",
+          "type": "u64"
+        },
+        {
+          "name": "min_reputation",
+          "type": "u64"
+        },
+        {
+          "name": "end_date",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_platform",
+      "discriminator": [
+        119,
+        201,
+        101,
+        45,
+        75,
+        122,
+        89,
+        3
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "platform_config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "fee_percentage",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "submit_vote",
+      "discriminator": [
+        115,
+        242,
+        100,
+        0,
+        49,
+        178,
+        242,
+        133
+      ],
+      "accounts": [
+        {
+          "name": "voter",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        },
+        {
+          "name": "vote",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  111,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "campaign"
+              },
+              {
+                "kind": "account",
+                "path": "voter"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_reputation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  112,
+                  117,
+                  116,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "voter"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "choice",
+          "type": "u8"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Campaign",
+      "discriminator": [
+        50,
+        40,
+        49,
+        11,
+        157,
+        220,
+        229,
+        192
+      ]
+    },
+    {
+      "name": "PlatformConfig",
+      "discriminator": [
+        160,
+        78,
+        128,
+        0,
+        248,
+        83,
+        230,
+        160
+      ]
+    },
+    {
+      "name": "UserReputation",
+      "discriminator": [
+        86,
+        95,
+        94,
+        218,
+        215,
+        219,
+        207,
+        37
+      ]
+    },
+    {
+      "name": "Vote",
+      "discriminator": [
+        96,
+        91,
+        104,
+        57,
+        145,
+        35,
+        172,
+        155
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "FeeTooHigh",
+      "msg": "Fee percentage cannot exceed 10%"
+    },
+    {
+      "code": 6001,
+      "name": "TitleTooLong",
+      "msg": "Title too long (max 100 characters)"
+    },
+    {
+      "code": 6002,
+      "name": "DescriptionTooLong",
+      "msg": "Description too long (max 500 characters)"
+    },
+    {
+      "code": 6003,
+      "name": "NotEnoughImages",
+      "msg": "Need at least 2 images"
+    },
+    {
+      "code": 6004,
+      "name": "TooManyImages",
+      "msg": "Maximum 10 images allowed"
+    },
+    {
+      "code": 6005,
+      "name": "ImageHashTooLong",
+      "msg": "Image hash too long"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidPrize",
+      "msg": "Invalid prize amount"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidParticipants",
+      "msg": "Invalid number of participants"
+    },
+    {
+      "code": 6008,
+      "name": "RewardTooSmall",
+      "msg": "Reward per participant too small"
+    },
+    {
+      "code": 6009,
+      "name": "CampaignNotActive",
+      "msg": "Campaign is not active"
+    },
+    {
+      "code": 6010,
+      "name": "CampaignExpired",
+      "msg": "Campaign has expired"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidChoice",
+      "msg": "Invalid choice"
+    },
+    {
+      "code": 6012,
+      "name": "InsufficientReputation",
+      "msg": "Insufficient reputation"
+    },
+    {
+      "code": 6013,
+      "name": "CampaignFull",
+      "msg": "Campaign is full"
+    },
+    {
+      "code": 6014,
+      "name": "CampaignStillActive",
+      "msg": "Campaign still active"
+    },
+    {
+      "code": 6015,
+      "name": "Unauthorized",
+      "msg": "Unauthorized"
+    },
+    {
+      "code": 6016,
+      "name": "InsufficientFunds",
+      "msg": "Insufficient funds"
+    },
+    {
+      "code": 6017,
+      "name": "CreatorCannotVote",
+      "msg": "Creator Cannot Vote"
+    },
+    {
+      "code": 6018,
+      "name": "CampaignHasVotes",
+      "msg": "Campaign already has votes, cannot cancel"
+    }
+  ],
+  "types": [
+    {
+      "name": "Campaign",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "options",
+            "type": {
+              "vec": "string"
+            }
+          },
+          {
+            "name": "reward",
+            "type": "u64"
+          },
+          {
+            "name": "participants",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "max_participants",
+            "type": "u64"
+          },
+          {
+            "name": "reward_per_participant",
+            "type": "u64"
+          },
+          {
+            "name": "vote_count",
+            "type": {
+              "vec": "u64"
+            }
+          },
+          {
+            "name": "total_votes",
+            "type": "u64"
+          },
+          {
+            "name": "min_reputation",
+            "type": "u64"
+          },
+          {
+            "name": "end_date",
+            "type": "u64"
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
+          },
+          {
+            "name": "created_at",
+            "type": "u64"
+          },
+          {
+            "name": "updated_at",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PlatformConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_percentage",
+            "type": "u16"
+          },
+          {
+            "name": "total_fee_collected",
+            "type": "u64"
+          },
+          {
+            "name": "total_campaigns",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReputationTier",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Newbie"
+          },
+          {
+            "name": "Regular"
+          },
+          {
+            "name": "Veteran"
+          },
+          {
+            "name": "Legend"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserReputation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_votes",
+            "type": "u32"
+          },
+          {
+            "name": "current_streak",
+            "type": "u32"
+          },
+          {
+            "name": "longest_streak",
+            "type": "u32"
+          },
+          {
+            "name": "last_vote_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "reputation_score",
+            "type": "u32"
+          },
+          {
+            "name": "tier",
+            "type": {
+              "defined": {
+                "name": "ReputationTier"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Vote",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "voter",
+            "type": "pubkey"
+          },
+          {
+            "name": "choice",
+            "type": "u8"
+          },
+          {
+            "name": "voted_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}
