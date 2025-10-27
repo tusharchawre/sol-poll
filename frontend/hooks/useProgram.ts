@@ -36,6 +36,7 @@ export function useProgram(): UseProgramReturn {
       preflightCommitment: "confirmed",
     });
     program = new anchor.Program<Contract>(Idl, provider);
+
   } else {
     // Create program with just connection for read-only operations
     program = new anchor.Program<Contract>(Idl, { connection });

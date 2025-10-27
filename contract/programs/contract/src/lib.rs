@@ -1,3 +1,4 @@
+
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 declare_id!("3djVsscqrPVpY2q4aGzcgYZjFaLnSRwiingCBkC2WFcE");
@@ -132,6 +133,9 @@ pub mod contract {
         );
 
         let current_time = Clock::get()?.unix_timestamp as u64;
+        if campaign.end_date > 0 && current_time >= campaign.end_date {
+            campaign.is_active = false;
+        }
         require!(
             campaign.end_date == 0 || current_time < campaign.end_date,
             ErrorCode::CampaignExpired
@@ -164,9 +168,8 @@ pub mod contract {
         campaign.participants.push(ctx.accounts.voter.key());
         campaign.total_votes = campaign.total_votes.checked_add(1).unwrap();
         campaign.updated_at = current_time;
-        campaign.vote_count[choice as usize] = campaign.vote_count[choice as usize]
-            .checked_add(1)
-            .unwrap();
+        campaign.vote_count[choice as usize] =
+            campaign.vote_count[choice as usize].checked_add(1).unwrap();
 
         update_reputation(reputation)?;
 
@@ -213,6 +216,7 @@ pub mod contract {
         let campaign = &mut ctx.accounts.campaign;
         let config = &ctx.accounts.platform_config;
 
+
         require!(
             campaign.participants.is_empty(),
             ErrorCode::CampaignHasVotes
@@ -243,7 +247,12 @@ pub mod contract {
 
     // Close completed campaign (cleanup, any remaining dust goes to platform)
     pub fn close_campaign(ctx: Context<CloseCampaign>) -> Result<()> {
-        let campaign = &ctx.accounts.campaign;
+        let campaign = &mut ctx.accounts.campaign;
+
+        let current_time = Clock::get()?.unix_timestamp as u64;
+        if campaign.end_date > 0 && current_time >= campaign.end_date {
+            campaign.is_active = false;
+        }
 
         require!(!campaign.is_active, ErrorCode::CampaignStillActive);
 
@@ -259,6 +268,26 @@ pub mod contract {
         }
 
         msg!("Campaign closed, {} lamports dust collected", remaining);
+        Ok(())
+    }
+
+    pub fn withdraw_fees(ctx: Context<WithdrawFees>) -> Result<()> {
+        let config = &mut ctx.accounts.platform_config;
+        
+        // Get actual withdrawable balance (minus rent)
+        let rent_exempt = Rent::get()?.minimum_balance(config.to_account_info().data_len());
+        let available = config.to_account_info().lamports()
+            .checked_sub(rent_exempt)
+            .unwrap();
+        
+        require!(available > 0, ErrorCode::InsufficientFunds);
+        
+        **config.to_account_info().try_borrow_mut_lamports()? -= available;
+        **ctx.accounts.authority.to_account_info().try_borrow_mut_lamports()? += available;
+        
+        config.total_fee_collected = 0; // Reset counter
+        
+        msg!("Fees withdrawn: {}", available);
         Ok(())
     }
 }
@@ -388,7 +417,8 @@ pub struct WithdrawFees<'info> {
     #[account(
         mut,
         seeds = [b"config"],
-        bump = platform_config.bump
+        bump = platform_config.bump,
+        has_one = authority
     )]
     pub platform_config: Account<'info, PlatformConfig>,
 }

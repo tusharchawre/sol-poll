@@ -1,5 +1,4 @@
 import React from "react";
-import { Button } from "./ui/Button";
 import WalletConnect from "@/components/wallet/WalletConnect";
 import { ModeToggle } from "@/components/ui/theme-toggle";
 import Link from "next/link";

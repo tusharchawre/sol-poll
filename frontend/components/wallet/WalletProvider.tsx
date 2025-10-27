@@ -6,11 +6,6 @@ import {
   WalletProvider,
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-  TorusWalletAdapter,
-} from "@solana/wallet-adapter-wallets";
 
 // Import wallet adapter CSS
 import "./wallet.css";
@@ -26,7 +21,7 @@ export default function WalletContextProvider({
 
   return (
     <ConnectionProvider
-      endpoint={"https://solana-devnet.g.alchemy.com/v2/14o1ZelJNlGJxG2O1lx8m"}
+      endpoint={"https://maximum-capable-snow.solana-devnet.quiknode.pro/5bbc70b6982606c396334c7770be01446c46c1d6/"}
     >
       <WalletProvider wallets={[]} autoConnect>
         <WalletModalProvider>{children}</WalletModalProvider>
