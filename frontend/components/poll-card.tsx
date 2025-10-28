@@ -7,6 +7,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Users, Trophy, Clock, DollarSign, Target } from "lucide-react";
+import Link from "next/link";
 
 type Campaign = {
   publicKey: string;
@@ -76,10 +77,11 @@ export default function PollCard({
       : 0;
 
   return (
-    <Card
-      className={`${className} hover:shadow-lg transition-shadow duration-300 border border-neutral-200 dark:border-neutral-700 shadow-md bg-white dark:bg-neutral-900`}
-      aria-label="Poll card"
-    >
+    <Link href={`/polls/${publicKey}`}>
+      <Card
+        className={`${className} hover:shadow-lg transition-shadow duration-300 border border-neutral-200 dark:border-neutral-700 shadow-md bg-white dark:bg-neutral-900 cursor-pointer`}
+        aria-label="Poll card"
+      >
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -194,5 +196,6 @@ export default function PollCard({
         </time>
       </CardFooter>
     </Card>
+   </Link>
   );
 }

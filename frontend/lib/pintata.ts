@@ -8,7 +8,7 @@ const pinata = new PinataSDK({
 export async function uploadImage(file: File): Promise<string> {
     try {
       const upload = await pinata.upload.public.file(file);
-      return `https://maroon-elegant-leopard-869.mypinata.cloud/ipfs/${upload.cid}`;
+      return upload.cid;
     } catch (error) {
       console.error("Upload failed:", error);
       throw error;

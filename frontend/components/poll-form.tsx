@@ -1,12 +1,22 @@
 "use client";
 import React, { useState } from "react";
 import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { format } from "date-fns"
-import { CalendarIcon, Minus, Plus, Plus as AddIcon, Type, Image, Upload, X } from "lucide-react"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { format } from "date-fns";
+import {
+  CalendarIcon,
+  Minus,
+  Plus,
+  Plus as AddIcon,
+  Type,
+  Image,
+  Upload,
+  X,
+} from "lucide-react";
+import * as anchor from "@coral-xyz/anchor";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -15,9 +25,15 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -25,16 +41,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Calendar } from "@/components/ui/calendar"
+} from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { Switch } from "@/components/ui/switch"
-import { uploadImage } from "@/lib/pintata"
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { uploadImage } from "@/lib/pintata";
+import { useProgram } from "@/hooks/useProgram";
 
 const formSchema = z.object({
   title: z.string().min(1).max(50),
@@ -51,29 +68,34 @@ const PollForm = () => {
   const [isTextPoll, setIsTextPoll] = useState(true);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const { program, connection, publicKey, connected } = useProgram();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-       title: "",
-       description: "",
-       options: ["", ""],
-       reward: 0,
-       maxParticipants: 1,
-       minReputation: 0,
-       endDate: new Date(),
-     },
-   })
+      title: "",
+      description: "",
+      options: ["", ""],
+      reward: 0,
+      maxParticipants: 1,
+      minReputation: 0,
+      endDate: new Date(),
+    },
+  });
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
     if (!files) return;
 
     setUploading(true);
     try {
-      const uploadPromises = Array.from(files).map(file => uploadImage(file));
+      const uploadPromises = Array.from(files).map((file) => uploadImage(file));
       const urls = await Promise.all(uploadPromises);
-      setUploadedImages(prev => [...prev, ...urls]);
+      setUploadedImages((prev) => [...prev, ...urls]);
     } catch (error) {
       console.error("Failed to upload images:", error);
     } finally {
@@ -82,23 +104,94 @@ const PollForm = () => {
   };
 
   const removeImage = (index: number) => {
-    setUploadedImages(prev => prev.filter((_, i) => i !== index));
+    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Convert date to Unix timestamp
-    const unixTimestamp = Math.floor(values.endDate.getTime() / 1000);
-    const submitValues = {
-      ...values,
-      endDate: unixTimestamp,
-      pollType: isTextPoll ? 'text' : 'image',
-      images: uploadedImages,
-    };
-    console.log(submitValues);
-    setOpen(false);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!connected || !publicKey) {
+      alert("Please connect your wallet first");
+      return;
+    }
+
+    if (!isTextPoll && uploadedImages.length < 2) {
+      alert("Please upload at least 2 images for image polls");
+      return;
+    }
+
+    if (isTextPoll && values.options.filter(opt => opt.trim()).length < 2) {
+      alert("Please provide at least 2 non-empty options");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Convert date to Unix timestamp
+      const unixTimestamp = Math.floor(values.endDate.getTime() / 1000);
+
+      const campaignId = new anchor.BN(Math.floor(Math.random() * 1000000));
+      const title = values.title;
+      const description = values.description;
+      const options = isTextPoll ? values.options.filter(opt => opt.trim()) : uploadedImages;
+      const reward = new anchor.BN(values.reward * anchor.web3.LAMPORTS_PER_SOL); // Convert SOL to lamports
+      const maxParticipants = new anchor.BN(values.maxParticipants);
+      const minReputation = new anchor.BN(values.minReputation);
+      const endDate = new anchor.BN(unixTimestamp);
+
+      const creator = publicKey;
+
+      const [campaignPda] = anchor.web3.PublicKey.findProgramAddressSync(
+        [
+          Buffer.from("campaign"),
+          creator.toBuffer(),
+          campaignId.toArrayLike(Buffer, "le", 8),
+        ],
+        program.programId
+      );
+
+      const tx = await program.methods
+        .createCampaign(
+          campaignId,
+          title,
+          description,
+          options,
+          reward,
+          maxParticipants,
+          minReputation,
+          endDate
+        )
+        .accounts({
+          creator,
+        })
+        .rpc({
+          skipPreflight: true,
+        });
+
+      console.log("Campaign created successfully:", tx);
+
+      const campaigns = await program.account.campaign.all();
+      console.log("Total campaigns:", campaigns.length);
+
+      const submitValues = {
+        ...values,
+        endDate: unixTimestamp,
+        pollType: isTextPoll ? "text" : "image",
+        images: uploadedImages,
+      };
+      console.log("Submit values:", submitValues);
+
+      setOpen(false);
+      // Reset form
+      form.reset();
+      setUploadedImages([]);
+      setIsTextPoll(true);
+    } catch (error) {
+      console.error("Failed to create campaign:", error);
+      alert(`Failed to create campaign: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setSubmitting(false);
+    }
   }
-
-
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -121,7 +214,10 @@ const PollForm = () => {
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="What's your poll about? e.g., Best Pizza Topping" {...field} />
+                    <Input
+                      placeholder="What's your poll about? e.g., Best Pizza Topping"
+                      {...field}
+                    />
                   </FormControl>
                   <FormDescription>
                     A catchy title for your poll.
@@ -137,7 +233,10 @@ const PollForm = () => {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Input placeholder="Provide more details about your poll..." {...field} />
+                    <Input
+                      placeholder="Provide more details about your poll..."
+                      {...field}
+                    />
                   </FormControl>
                   <FormDescription>
                     Explain what participants are voting on.
@@ -169,7 +268,12 @@ const PollForm = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
-                            <Input placeholder={`Option ${index + 1} (e.g., Pepperoni)`} {...field} />
+                            <Input
+                              placeholder={`Option ${
+                                index + 1
+                              } (e.g., Pepperoni)`}
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -195,8 +299,12 @@ const PollForm = () => {
                 <div className="space-y-4">
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                     <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600 mb-2">Upload images for poll options</p>
-                    <p className="text-xs text-gray-500 mb-4">You can upload multiple images (max 4)</p>
+                    <p className="text-sm text-gray-600 mb-2">
+                      Upload images for poll options
+                    </p>
+                    <p className="text-xs text-gray-500 mb-4">
+                      You can upload multiple images (max 4)
+                    </p>
                     <input
                       type="file"
                       multiple
@@ -223,10 +331,10 @@ const PollForm = () => {
 
                   {uploadedImages.length > 0 && (
                     <div className="grid grid-cols-2 gap-4">
-                      {uploadedImages.map((url, index) => (
+                      {uploadedImages.map((cid, index) => (
                         <div key={index} className="relative">
                           <img
-                            src={url}
+                            src={`https://maroon-elegant-leopard-869.mypinata.cloud/ipfs/${cid}`}
                             alt={`Option ${index + 1}`}
                             className="w-full h-24 object-cover rounded-lg border"
                           />
@@ -249,8 +357,7 @@ const PollForm = () => {
               <FormDescription>
                 {isTextPoll
                   ? "Provide at least 2 and up to 4 text options for the poll."
-                  : "Upload at least 2 and up to 4 images for the poll options."
-                }
+                  : "Upload at least 2 and up to 4 images for the poll options."}
               </FormDescription>
             </div>
             <FormField
@@ -260,7 +367,15 @@ const PollForm = () => {
                 <FormItem>
                   <FormLabel>Reward (SOL)</FormLabel>
                   <FormControl>
-                    <Input type="number" step="0.01" placeholder="0.10" {...field} onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.10"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(parseFloat(e.target.value) || 0)
+                      }
+                    />
                   </FormControl>
                   <FormDescription>
                     The total reward pool in SOL for participants.
@@ -281,7 +396,9 @@ const PollForm = () => {
                         type="button"
                         variant="outline"
                         size="icon"
-                        onClick={() => field.onChange(Math.max(1, field.value - 1))}
+                        onClick={() =>
+                          field.onChange(Math.max(1, field.value - 1))
+                        }
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
@@ -289,7 +406,9 @@ const PollForm = () => {
                         type="number"
                         className="w-20 text-center"
                         {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value) || 1)
+                        }
                       />
                       <Button
                         type="button"
@@ -314,7 +433,10 @@ const PollForm = () => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Min Reputation</FormLabel>
-                  <Select onValueChange={(value) => field.onChange(parseInt(value))} defaultValue={field.value.toString()}>
+                  <Select
+                    onValueChange={(value) => field.onChange(parseInt(value))}
+                    defaultValue={field.value.toString()}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select min reputation" />
@@ -378,12 +500,14 @@ const PollForm = () => {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">Create Poll</Button>
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? "Creating..." : "Create Poll"}
+            </Button>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
-  )
+  );
 };
 
 export default PollForm;
