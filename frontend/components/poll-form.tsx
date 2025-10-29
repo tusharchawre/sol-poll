@@ -70,6 +70,17 @@ const PollForm = () => {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const handleModeSwitch = (isText: boolean) => {
+    setIsTextPoll(isText);
+    if (!isText) {
+      // Switching to image mode
+      form.setValue("options", [...uploadedImages]);
+    } else {
+      // Switching to text mode
+      form.setValue("options", ["", ""]);
+    }
+  };
+
   const { program, connection, publicKey, connected } = useProgram();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -95,7 +106,13 @@ const PollForm = () => {
     try {
       const uploadPromises = Array.from(files).map((file) => uploadImage(file));
       const urls = await Promise.all(uploadPromises);
-      setUploadedImages((prev) => [...prev, ...urls]);
+      setUploadedImages((prev) => {
+        const newImages = [...prev, ...urls];
+        if (!isTextPoll) {
+          form.setValue("options", newImages);
+        }
+        return newImages;
+      });
     } catch (error) {
       console.error("Failed to upload images:", error);
     } finally {
@@ -104,7 +121,13 @@ const PollForm = () => {
   };
 
   const removeImage = (index: number) => {
-    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
+    setUploadedImages((prev) => {
+      const newImages = prev.filter((_, i) => i !== index);
+      if (!isTextPoll) {
+        form.setValue("options", newImages);
+      }
+      return newImages;
+    });
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -133,7 +156,7 @@ const PollForm = () => {
       const title = values.title;
       const description = values.description;
       const options = isTextPoll ? values.options.filter(opt => opt.trim()) : uploadedImages;
-      const reward = new anchor.BN(values.reward * anchor.web3.LAMPORTS_PER_SOL); // Convert SOL to lamports
+      const reward = new anchor.BN(values.reward * anchor.web3.LAMPORTS_PER_SOL);
       const maxParticipants = new anchor.BN(values.maxParticipants);
       const minReputation = new anchor.BN(values.minReputation);
       const endDate = new anchor.BN(unixTimestamp);
@@ -252,7 +275,7 @@ const PollForm = () => {
                   <Type className="w-4 h-4 text-gray-500" />
                   <Switch
                     checked={isTextPoll}
-                    onCheckedChange={setIsTextPoll}
+                    onCheckedChange={(checked) => handleModeSwitch(checked)}
                   />
                   <Image className="w-4 h-4 text-gray-500" />
                 </div>

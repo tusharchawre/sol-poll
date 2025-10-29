@@ -61,6 +61,13 @@ const PollPage = () => {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
   const [userVote, setUserVote] = useState<number | null>(null);
+  const [userReputation, setUserReputation] = useState<{
+    total_votes: number;
+    current_streak: number;
+    longest_streak: number;
+    reputation_score: number;
+    tier: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchWithRetry = async (
@@ -102,7 +109,7 @@ const PollPage = () => {
           account: campaignAccount,
         });
 
-        // Check if user has already voted
+        // Check if user has already voted and get reputation
         if (userPublicKey) {
           try {
             const [votePda] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -114,7 +121,6 @@ const PollPage = () => {
               program.programId
             );
 
-
             const voteAccount = await fetchWithRetry(() =>
               program.account.vote.fetch(votePda)
             );
@@ -123,6 +129,42 @@ const PollPage = () => {
           } catch (error) {
             // Vote doesn't exist, user hasn't voted
             setHasVoted(false);
+          }
+
+          // Get user reputation
+          try {
+            const [reputationPda] =
+              anchor.web3.PublicKey.findProgramAddressSync(
+                [Buffer.from("reputation"), userPublicKey.toBuffer()],
+                program.programId
+              );
+
+            const reputationAccount = await fetchWithRetry(() =>
+              program.account.userReputation.fetch(reputationPda)
+            );
+
+            console.log(reputationAccount);
+
+            // Extract tier name from enum object
+            const tierKey = Object.keys(reputationAccount.tier)[0];
+            const tierName = tierKey.charAt(0).toUpperCase() + tierKey.slice(1);
+
+            setUserReputation({
+              total_votes: reputationAccount.totalVotes,
+              current_streak: reputationAccount.currentStreak,
+              longest_streak: reputationAccount.longestStreak,
+              reputation_score: reputationAccount.reputationScore,
+              tier: tierName,
+            });
+          } catch (error) {
+            // Reputation doesn't exist, user is new
+            setUserReputation({
+              total_votes: 0,
+              current_streak: 0,
+              longest_streak: 0,
+              reputation_score: 0,
+              tier: "Newbie",
+            });
           }
         }
       } catch (error) {
@@ -409,7 +451,9 @@ const PollPage = () => {
                           </span>
                         </div>
                       )}
-                      {option.startsWith("Qm") || option.startsWith("bafy") ? (
+                      {option.startsWith("Qm") ||
+                      option.startsWith("bafy") ||
+                      option.startsWith("bafk") ? (
                         <img
                           src={`https://maroon-elegant-leopard-869.mypinata.cloud/ipfs/${option}`}
                           alt={`Option ${index + 1}`}
@@ -459,6 +503,58 @@ const PollPage = () => {
                   </>
                 )}
               </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* User Reputation Display */}
+        {userReputation && connected && (
+          <Card className="bg-neutral-800 border-neutral-700">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-3 text-white">
+                <Trophy className="w-6 h-6 text-yellow-400" />
+                <span className="text-xl">Your Reputation</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-neutral-700 p-4 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-white">
+                    {userReputation.reputation_score}
+                  </div>
+                  <div className="text-sm text-neutral-400">
+                    Reputation Score
+                  </div>
+                </div>
+                <div className="bg-neutral-700 p-4 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-white">
+                    {userReputation.total_votes}
+                  </div>
+                  <div className="text-sm text-neutral-400">Total Votes</div>
+                </div>
+                <div className="bg-neutral-700 p-4 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-white">
+                    {userReputation.current_streak}
+                  </div>
+                  <div className="text-sm text-neutral-400">Current Streak</div>
+                </div>
+                <div className="bg-neutral-700 p-4 rounded-lg text-center">
+                  <div
+                    className={`text-lg font-bold px-3 py-1 rounded-full ${
+                      userReputation.tier === "Legend"
+                        ? "bg-yellow-600 text-yellow-100"
+                        : userReputation.tier === "Veteran"
+                        ? "bg-purple-600 text-purple-100"
+                        : userReputation.tier === "Regular"
+                        ? "bg-blue-600 text-blue-100"
+                        : "bg-gray-600 text-gray-100"
+                    }`}
+                  >
+                    {userReputation.tier}
+                  </div>
+                  <div className="text-sm text-neutral-400 mt-1">Tier</div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
