@@ -21,7 +21,7 @@ export default function WalletContextProvider({
 
   return (
     <ConnectionProvider
-      endpoint={"https://maximum-capable-snow.solana-devnet.quiknode.pro/5bbc70b6982606c396334c7770be01446c46c1d6/"}
+      endpoint={process.env.NEXT_PUBLIC_SOLANA_RPC_URL || "https://api.devnet.solana.com"}
     >
       <WalletProvider wallets={[]} autoConnect>
         <WalletModalProvider>{children}</WalletModalProvider>
