@@ -37,16 +37,30 @@ export const GET = async (
   // This JSON is used to render the Blink UI
   const response: ActionGetResponse = {
     type: "action",
-    icon: `https://plus.unsplash.com/premium_photo-1750672581729-a6da4cb5a0eb?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwxfHx8ZW58MHx8fHx8&auto=format&fit=crop&q=60&w=900`,
-    label: `Vote & Earn ${(Number(campaign.rewardPerParticipant) / 1_000_000_000).toFixed(3)} SOL`,
+    icon: `https://maroon-elegant-leopard-869.mypinata.cloud/ipfs/bafybeifq7xcdtqid7oojb52wj26g4aj3igjmvigk22hiwu6tirlk6dbiti`,
+    label: `Vote & Earn ${(
+      Number(campaign.rewardPerParticipant) / 1_000_000_000
+    ).toFixed(3)} SOL`,
     title: campaign.title,
-    description: `${campaign.description}\n\nReward: ${(Number(campaign.rewardPerParticipant) / 1_000_000_000).toFixed(3)} SOL per vote\nParticipants: ${campaign.participants.length}/${Number(campaign.maxParticipants)}`,
+    description: `${campaign.description}\n\nReward: ${(
+      Number(campaign.rewardPerParticipant) / 1_000_000_000
+    ).toFixed(3)} SOL per vote\nParticipants: ${
+      campaign.participants.length
+    }/${Number(campaign.maxParticipants)}`,
     links: {
       actions: campaign.options.map((option, index) => {
+        const cidRegex = /^(?:baf[0-9a-z]{20,}|Qm[1-9A-HJ-NP-Za-km-z]{44,})$/;
+        const isCid =
+          typeof option === "string" && cidRegex.test(option.trim());
+        const iconUrl = isCid
+          ? `https://maroon-elegant-leopard-869.mypinata.cloud/ipfs/${option.trim()}`
+          : undefined;
+
         return {
           type: "transaction",
           label: option,
           href: `${req.url}?choice=${index}`,
+          icon: iconUrl,
         };
       }),
     },
@@ -75,7 +89,6 @@ export const POST = async (
     const url = new URL(req.url);
     const choice = parseInt(url.searchParams.get("choice") || "0");
 
-    
     const { campaignKey } = await params;
     // Build the vote transaction
     const campaignPDA = new PublicKey(campaignKey);
@@ -100,8 +113,11 @@ export const POST = async (
     tx.feePayer = userPubkey;
 
     // Serialize and encode
-    const serialized = tx.serialize({ requireAllSignatures: false, verifySignatures: false });
-    const base64Tx = serialized.toString('base64');
+    const serialized = tx.serialize({
+      requireAllSignatures: false,
+      verifySignatures: false,
+    });
+    const base64Tx = serialized.toString("base64");
 
     console.log("Vote transaction created");
 

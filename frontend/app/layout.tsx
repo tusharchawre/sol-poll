@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import WalletContextProvider from "../components/wallet/WalletProvider";
 import { ThemeProvider } from "@/components/theme-provider";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +39,14 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <div className="font-sans min-h-screen max-w-7xl p-8 mx-auto relative">
+              <Navbar />
+              <div className="min-h-screen pb-8 mx-auto relative">
+                {children}
+              </div>
+              <Footer />
+            </div>
+            <Toaster />
           </ThemeProvider>
         </WalletContextProvider>
       </body>

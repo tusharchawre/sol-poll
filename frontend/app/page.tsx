@@ -124,7 +124,7 @@ export default function Home() {
   };
 
   const initializePlatform = async () => {
-    if (!publicKey) return;
+    if (!connected || !publicKey) return;
 
     const tx = await program.methods
       .initializePlatform(500) // 5% as u16 (500 basis points)
@@ -162,11 +162,26 @@ export default function Home() {
       },
     }));
 
+    // Sort: non-ended first, then by highest reward; ended polls at bottom
+    const nowMs = Date.now();
+    formattedCampaigns.sort((a, b) => {
+      const endA = parseInt(a.account.endDate, 16) * 1000;
+      const endB = parseInt(b.account.endDate, 16) * 1000;
+      const endedA = isNaN(endA) ? false : endA <= nowMs;
+      const endedB = isNaN(endB) ? false : endB <= nowMs;
+
+      if (endedA !== endedB) return endedA ? 1 : -1;
+
+      const rewardA = parseInt(a.account.reward, 16) || 0;
+      const rewardB = parseInt(b.account.reward, 16) || 0;
+      return rewardB - rewardA; // highest paying first
+    });
+
     setCampaigns(formattedCampaigns);
   };
 
   const submitVote = async (choice: number, campaignPubkey: string) => {
-    if (!publicKey) return;
+    if (!connected || !publicKey) return;
 
     const campaignPda = new PublicKey(campaignPubkey);
     const voter = publicKey;
@@ -215,7 +230,7 @@ export default function Home() {
   };
 
   const withdrawFees = async () => {
-    if (!publicKey) return;
+    if (!connected || !publicKey) return;
 
     console.log("Withdrawing fees...");
     const tx = await program.methods
@@ -229,7 +244,7 @@ export default function Home() {
   };
 
   const closeCampaign = async (campaignPubkey: string) => {
-    if (!publicKey) return;
+    if (!connected || !publicKey) return;
 
     const campaignPda = new PublicKey(campaignPubkey);
 
@@ -252,15 +267,12 @@ export default function Home() {
   };
 
   const closeAllInactiveCampaigns = async () => {
-    if (!publicKey) return;
+    if (!connected || !publicKey) return;
 
-    for (const campaign of campaigns) {
+    // Close the specific campaign by public key provided
+    await closeCampaign("FX7abdPuP2NK38VkGQWueiZZPbUvgEAVqTvgjkv3oufu");
 
-        await closeCampaign(campaign.publicKey);
-
-    }
-
-    // Refresh campaigns after closing all
+    // Refresh campaigns after closing
     fetchCampaigns();
   };
 
@@ -278,32 +290,132 @@ export default function Home() {
     }
   }, []);
 
+  // Listen for refresh requests from other components (e.g., after creating a poll)
+  useEffect(() => {
+    const handler = () => {
+      fetchCampaigns();
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("campaigns:refresh", handler as EventListener);
+    }
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener(
+          "campaigns:refresh",
+          handler as EventListener
+        );
+      }
+    };
+  }, [program]);
+
   return (
-    <div className="font-sans min-h-screen max-w-7xl p-8 mx-auto">
-      <Navbar />
-      <main>
-        <div className="flex justify-center mb-8">
-          <PollForm />
+    <main>
+      <section className="relative mb-10 overflow-hidden rounded-2xl border border-neutral-200/60 bg-gradient-to-b from-white to-neutral-50 p-6 shadow-sm dark:border-neutral-800/60 dark:from-neutral-950 dark:to-neutral-900">
+        <div className="pointer-events-none absolute inset-0 -z-10 opacity-40 [mask-image:radial-gradient(60%_60%_at_50%_0%,black,transparent)]">
+          <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-emerald-400/30 blur-3xl" />
+          <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-indigo-400/30 blur-3xl" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {campaigns.map((campaign) => (
-            <PollCard key={campaign.publicKey} {...campaign} />
-          ))}
+
+        <div className="flex flex-col items-center text-center gap-5">
+          <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white/60 px-3 py-1 text-xs font-medium text-neutral-700 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-300">
+            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+            On-chain, incentivized polls on Solana
+          </div>
+
+          <h1 className="mx-auto max-w-3xl text-3xl font-bold tracking-tight text-neutral-900 dark:text-white md:text-4xl lg:text-5xl">
+            Vote. Earn. Build Reputation on Solana.
+          </h1>
+          <p className="mx-auto max-w-2xl text-neutral-600 dark:text-neutral-400">
+            Create and participate in on-chain polls with real SOL rewards. Gate
+            by reputation, cap participants, and grow a credible voting
+            history—all secured by Solana.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
+
+            <Button
+              variant="secondary"
+              onClick={() => {
+                const el = document.getElementById("polls");
+                if (el)
+                  el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+            >
+              Explore Polls
+            </Button>
+          </div>
+
+          <div className="mt-4 grid w-full max-w-3xl grid-cols-3 gap-3 text-left">
+            <div className="rounded-xl border border-neutral-200/60 bg-white/60 p-3 text-sm dark:border-neutral-800/60 dark:bg-neutral-900/40">
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                Active polls
+              </div>
+              <div className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                {campaigns.filter((c) => c.account.isActive).length}
+              </div>
+            </div>
+            <div className="rounded-xl border border-neutral-200/60 bg-white/60 p-3 text-sm dark:border-neutral-800/60 dark:bg-neutral-900/40">
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                Total reward pool
+              </div>
+              <div className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                {(() => {
+                  try {
+                    const total = campaigns.reduce((sum, c) => {
+                      const v = parseInt(
+                        c.account.reward as unknown as string,
+                        16
+                      );
+                      return sum + (isNaN(v) ? 0 : v);
+                    }, 0);
+                    return `${(total / 1e9).toFixed(2)} SOL`;
+                  } catch {
+                    return "0.00 SOL";
+                  }
+                })()}
+              </div>
+            </div>
+            <div className="rounded-xl border border-neutral-200/60 bg-white/60 p-3 text-sm dark:border-neutral-800/60 dark:bg-neutral-900/40">
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                Votes cast
+              </div>
+              <div className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                {campaigns.reduce((sum, c) => {
+                  const v = parseInt(
+                    c.account.totalVotes as unknown as string,
+                    16
+                  );
+                  return sum + (isNaN(v) ? 0 : v);
+                }, 0)}
+              </div>
+            </div>
+          </div>
         </div>
-        <Button onClick={initializePlatform}>Initialize Platform</Button>
-        <Button onClick={handleCreateCampaign}>Create Campaign (Old)</Button>
-        <Button onClick={fetchCampaigns}>Fetch Campaigns</Button>
-        <Button
-          onClick={() =>
-            submitVote(0, "EkTem6B3sMzezCm3Cg79cLWw9RRXVegQDnTNWhYdNBxn")
-          }
-        >
-          Submit Vote
-        </Button>
-        <Button onClick={withdrawFees}>Withdraw Fees</Button>
-        <Button onClick={fetchPlatformConfig}>Fetch Platform Config</Button>
-        <Button onClick={closeAllInactiveCampaigns}>Close All Inactive Campaigns</Button>
-      </main>
-    </div>
+      </section>
+
+      <div
+        id="polls"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 items-stretch"
+      >
+        {campaigns.map((campaign) => (
+          <PollCard key={campaign.publicKey} {...campaign} />
+        ))}
+      </div>
+      {/* <Button onClick={initializePlatform}>Initialize Platform</Button>
+      <Button onClick={handleCreateCampaign}>Create Campaign (Old)</Button>
+      <Button onClick={fetchCampaigns}>Fetch Campaigns</Button>
+      <Button
+        onClick={() =>
+          submitVote(0, "EkTem6B3sMzezCm3Cg79cLWw9RRXVegQDnTNWhYdNBxn")
+        }
+      >
+        Submit Vote
+      </Button>
+      <Button onClick={withdrawFees}>Withdraw Fees</Button>
+      <Button onClick={fetchPlatformConfig}>Fetch Platform Config</Button>
+      <Button onClick={closeAllInactiveCampaigns}>
+        Close All Inactive Campaigns
+      </Button> */}
+    </main>
   );
 }
