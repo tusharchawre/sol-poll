@@ -243,8 +243,8 @@ const PollPage = () => {
         title: delta > 0 ? "✨ Reputation increased!" : "Vote Submitted!",
         description:
           delta > 0
-            ? `+${delta} rep • ${prettyTier} (${repAfter})`
-            : "Your vote has been recorded successfully.",
+            ? `+${delta} rep • ${prettyTier} (${repAfter}) • +${rewardPerVote.toFixed(4)} SOL credited to your wallet`
+            : `Your vote has been recorded successfully. +${rewardPerVote.toFixed(4)} SOL credited to your wallet.`,
       });
 
       // Let small badges refresh

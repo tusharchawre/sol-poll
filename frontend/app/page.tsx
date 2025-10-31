@@ -345,8 +345,8 @@ export default function Home() {
             </Button>
           </div>
 
-          <div className="mt-4 grid w-full max-w-3xl grid-cols-3 gap-3 text-left">
-            <div className="rounded-xl border border-neutral-200/60 bg-white/60 p-3 text-sm dark:border-neutral-800/60 dark:bg-neutral-900/40">
+          <div className="mt-4 grid w-full max-w-3xl grid-cols-2  gap-3 items-center">
+            <div className="rounded-xl border border-neutral-400/60 bg-white/60 p-3 text-sm dark:border-neutral-700/60 dark:bg-neutral-900/40">
               <div className="text-xs text-neutral-500 dark:text-neutral-400">
                 Active polls
               </div>
@@ -354,7 +354,7 @@ export default function Home() {
                 {campaigns.filter((c) => c.account.isActive).length}
               </div>
             </div>
-            <div className="rounded-xl border border-neutral-200/60 bg-white/60 p-3 text-sm dark:border-neutral-800/60 dark:bg-neutral-900/40">
+            <div className="rounded-xl border border-neutral-400/60 bg-white/60 p-3 text-sm dark:border-neutral-700/60 dark:bg-neutral-900/40">
               <div className="text-xs text-neutral-500 dark:text-neutral-400">
                 Total reward pool
               </div>
@@ -375,7 +375,7 @@ export default function Home() {
                 })()}
               </div>
             </div>
-            <div className="rounded-xl border border-neutral-200/60 bg-white/60 p-3 text-sm dark:border-neutral-800/60 dark:bg-neutral-900/40">
+            {/* <div className="rounded-xl border border-neutral-200/60 bg-white/60 p-3 text-sm dark:border-neutral-800/60 dark:bg-neutral-900/40">
               <div className="text-xs text-neutral-500 dark:text-neutral-400">
                 Votes cast
               </div>
@@ -388,7 +388,7 @@ export default function Home() {
                   return sum + (isNaN(v) ? 0 : v);
                 }, 0)}
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>
