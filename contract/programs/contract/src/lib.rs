@@ -1,4 +1,3 @@
-
 use anchor_lang::prelude::*;
 use anchor_lang::system_program;
 declare_id!("3djVsscqrPVpY2q4aGzcgYZjFaLnSRwiingCBkC2WFcE");
@@ -146,8 +145,15 @@ pub mod contract {
             ErrorCode::InvalidChoice
         );
 
+        let tier_value = match reputation.tier {
+            ReputationTier::Newbie => 0,
+            ReputationTier::Regular => 1,
+            ReputationTier::Veteran => 2,
+            ReputationTier::Legend => 3,
+        };
+
         require!(
-            reputation.reputation_score >= campaign.min_reputation as u32,
+            tier_value >= campaign.min_reputation,
             ErrorCode::InsufficientReputation
         );
 
@@ -216,7 +222,6 @@ pub mod contract {
         let campaign = &mut ctx.accounts.campaign;
         let config = &ctx.accounts.platform_config;
 
-
         require!(
             campaign.participants.is_empty(),
             ErrorCode::CampaignHasVotes
@@ -273,20 +278,26 @@ pub mod contract {
 
     pub fn withdraw_fees(ctx: Context<WithdrawFees>) -> Result<()> {
         let config = &mut ctx.accounts.platform_config;
-        
+
         // Get actual withdrawable balance (minus rent)
         let rent_exempt = Rent::get()?.minimum_balance(config.to_account_info().data_len());
-        let available = config.to_account_info().lamports()
+        let available = config
+            .to_account_info()
+            .lamports()
             .checked_sub(rent_exempt)
             .unwrap();
-        
+
         require!(available > 0, ErrorCode::InsufficientFunds);
-        
+
         **config.to_account_info().try_borrow_mut_lamports()? -= available;
-        **ctx.accounts.authority.to_account_info().try_borrow_mut_lamports()? += available;
-        
+        **ctx
+            .accounts
+            .authority
+            .to_account_info()
+            .try_borrow_mut_lamports()? += available;
+
         config.total_fee_collected = 0; // Reset counter
-        
+
         msg!("Fees withdrawn: {}", available);
         Ok(())
     }
@@ -328,11 +339,11 @@ fn update_reputation(reputation: &mut UserReputation) -> Result<()> {
     reputation.last_vote_timestamp = current_time;
     reputation.total_votes = reputation.total_votes.checked_add(1).unwrap();
 
-    // Update tier
-    reputation.tier = match reputation.total_votes {
-        0..=10 => ReputationTier::Newbie,
-        11..=50 => ReputationTier::Regular,
-        51..=200 => ReputationTier::Veteran,
+    // Update tier based on reputation_score (not total_votes)
+    reputation.tier = match reputation.reputation_score {
+        0..=99 => ReputationTier::Newbie,
+        100..=299 => ReputationTier::Regular,
+        300..=499 => ReputationTier::Veteran,
         _ => ReputationTier::Legend,
     };
 

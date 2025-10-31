@@ -68,7 +68,7 @@ const Navbar = () => {
       cancelled = true;
       window.removeEventListener("reputation:refresh", onRefresh);
     };
-  }, [program, publicKey]);
+  }, [publicKey]);
   return (
     <nav className="w-full bg-background flex items-center justify-between px-4 py-3 md:py-4">
       <Link href="/">

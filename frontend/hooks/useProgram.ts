@@ -7,6 +7,7 @@ import {
   useConnection,
   useWallet,
 } from "@solana/wallet-adapter-react";
+import { useMemo } from "react";
 import Idl from "../anchor-idl/idl.json";
 import { Contract } from "@/anchor-idl/idl";
 
@@ -28,21 +29,20 @@ export function useProgram(): UseProgramReturn {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
 
-  // Program initialization - conditionally create with provider if wallet connected
-  let program;
-  if (wallet) {
-    // Create a provider with the wallet for transaction signing
-    const provider = new anchor.AnchorProvider(connection, wallet, {
-      preflightCommitment: "confirmed",
-    });
-    program = new anchor.Program<Contract>(Idl, provider);
+  // Memoize program to prevent recreation on every render
+  const program = useMemo(() => {
+    if (wallet) {
+      // Create a provider with the wallet for transaction signing
+      const provider = new anchor.AnchorProvider(connection, wallet, {
+        preflightCommitment: "confirmed",
+      });
+      return new anchor.Program<Contract>(Idl, provider);
+    } else {
+      // Create program with just connection for read-only operations
+      return new anchor.Program<Contract>(Idl, { connection });
+    }
+  }, [wallet, connection]);
 
-  } else {
-    // Create program with just connection for read-only operations
-    program = new anchor.Program<Contract>(Idl, { connection });
-  }
-
- 
   return {
     program,
     publicKey,

@@ -306,7 +306,7 @@ export default function Home() {
         );
       }
     };
-  }, [program]);
+  }, []);
 
   return (
     <main>
